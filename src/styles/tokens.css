@@ -1,0 +1,22 @@
+:root {
+  --brand-secondary: #00b894;
+  --error: #d63031;
+
+  --primary-bg: #f7f7f8;
+  --secondary-bg: #e8ecef;
+  --button-primary: #2b6cb0;
+  --button-secondary: #e8ecef;
+  --primary-text: #1a202c;
+  --secondary-text: #718096;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primary-bg: #1a202c;
+    --secondary-bg: #2d3748;
+    --button-primary: #4299e1;
+    --button-secondary: #2d3748;
+    --primary-text: #edf2f7;
+    --secondary-text: #a0aec0;
+  }
+}

@@ -1,0 +1,112 @@
+.card {
+  perspective: 1000px;
+  height: 100px;
+  border: none;
+  padding: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.card:disabled {
+  cursor: default;
+}
+
+.card__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.card--flipped .card__inner {
+  transform: rotateY(180deg);
+}
+
+.card__face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.card__face--front {
+  background: var(--button-primary);
+  color: white;
+}
+
+.card__face--back {
+  transform: rotateY(180deg);
+}
+
+.card__face--winner {
+  background: var(--brand-secondary);
+}
+
+.card__face--loser {
+  background: var(--error);
+}
+
+.card__number {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.card__emoji {
+  font-size: 2.75rem;
+  line-height: 1;
+}
+
+.card__corner-number {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+}
+
+.card:not(:disabled):active .card__inner {
+  transform: scale(0.96);
+}
+
+.card--flipped:not(:disabled):active .card__inner {
+  transform: rotateY(180deg) scale(0.96);
+}
+
+.card--flipped .card__emoji {
+  animation: emoji-pop 0.25s ease-out;
+}
+
+@keyframes emoji-pop {
+  0% {
+    transform: scale(0.5);
+  }
+  70% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.card--winner.card--flipped .card__emoji {
+  animation: emoji-pop-winner 0.3s ease-out;
+}
+
+@keyframes emoji-pop-winner {
+  0% {
+    transform: scale(0.5);
+  }
+  70% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
