@@ -36,7 +36,11 @@ export function drawSummary(players, winnerCount) {
 
 export function winnerOutcomeText(zeroBasedIndices) {
   const displayNumbers = zeroBasedIndices.map(displayNumber).sort((a, b) => a - b);
-  const tags = displayNumbers.map((n) => `№${n}`);
+  return winnerOutcomeTextFromDisplayNumbers(displayNumbers);
+}
+
+export function winnerOutcomeTextFromDisplayNumbers(displayNumbers) {
+  const tags = [...displayNumbers].sort((a, b) => a - b).map((n) => `№${n}`);
 
   switch (tags.length) {
     case 0:
@@ -61,5 +65,18 @@ export function shareText(players, winnerCount, zeroBasedWinnerIndices, date = n
 
   lines.push(drawSummary(players, winnerCount));
   lines.push(winnerOutcomeText(zeroBasedWinnerIndices));
+  return lines.join('\n');
+}
+
+export function shareTextForRecord(record) {
+  const lines = ['Жеребьёвка — LotDraw'];
+  const formatter = new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+
+  lines.push(formatter.format(new Date(record.date)));
+  lines.push(drawSummary(record.totalPlayers, record.winnerCount));
+  lines.push(winnerOutcomeTextFromDisplayNumbers(record.winnerIndices));
   return lines.join('\n');
 }

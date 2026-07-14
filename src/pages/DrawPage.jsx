@@ -1,19 +1,17 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  clampedPlayersCount,
-  clampedWinnersCount,
-  DEFAULT_PLAYERS,
-  DEFAULT_WINNERS,
-} from '../core/drawEngine.js';
+import { DEFAULT_PLAYERS, DEFAULT_WINNERS } from '../core/drawEngine.js';
 import Card from '../components/Card.jsx';
 import DrawComplete from '../components/DrawComplete.jsx';
-import { useDraw } from '../hooks/useDraw.js';
+import { useAppSettings } from '../hooks/useAppSettings.jsx';
+import { SHUFFLE_ANIMATED_MAX, useDraw } from '../hooks/useDraw.js';
+import { useShuffleDisplayNumbers } from '../hooks/useShuffleDisplayNumbers.js';
 import { hasSeenCardHint, setHasSeenCardHint } from '../storage/appSettings.js';
 
 export default function DrawPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { clampedPlayersCount, clampedWinnersCount } = useAppSettings();
   const [showCardHint, setShowCardHint] = useState(() => !hasSeenCardHint());
 
   const { totalPlayers, winnerCount } = useMemo(() => {
@@ -27,7 +25,7 @@ export default function DrawPage() {
       players
     );
     return { totalPlayers: players, winnerCount: winners };
-  }, [searchParams]);
+  }, [searchParams, clampedPlayersCount, clampedWinnersCount]);
 
   const {
     players,
@@ -35,35 +33,64 @@ export default function DrawPage() {
     drawProgress,
     winnerIndices,
     showComplete,
+    isShuffling,
     flipCard,
     reset,
   } = useDraw(totalPlayers, winnerCount);
 
+  const { frontNumbers: shuffleFrontNumbers, shuffleTick } = useShuffleDisplayNumbers(
+    totalPlayers,
+    isShuffling
+  );
+  const showSimpleShuffleOverlay = isShuffling && totalPlayers > SHUFFLE_ANIMATED_MAX;
+
   const handleFlip = useCallback(
     (index) => {
+      if (isShuffling) return;
+
       if (showCardHint) {
         setHasSeenCardHint();
         setShowCardHint(false);
       }
       flipCard(index);
     },
-    [flipCard, showCardHint]
+    [flipCard, isShuffling, showCardHint]
   );
 
-  const showHint = showCardHint && flippedCount === 0;
+  const showHint = !isShuffling && showCardHint && flippedCount === 0;
+
+  useEffect(() => {
+    if (!showComplete) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showComplete]);
 
   return (
-    <div className="page">
+    <div className={`page${showComplete ? ' page--modal-open' : ''}`}>
       <button type="button" className="back-button" onClick={() => navigate('/')}>
         ← Назад
       </button>
 
       <header className="draw-header fade-in">
-        <h1 className="draw-header__title">Выберите один из вариантов</h1>
+        <h1 className="draw-header__title" aria-live="polite">
+          {isShuffling ? 'Тасуем карточки…' : 'Выберите один из вариантов'}
+        </h1>
         <p className="draw-header__progress">
-          Открыто {flippedCount} из {totalPlayers}
+          {isShuffling ? 'Жеребьёвка' : `Открыто ${flippedCount} из ${totalPlayers}`}
         </p>
-        <div className="progress-bar" role="progressbar" aria-valuenow={flippedCount} aria-valuemin={0} aria-valuemax={totalPlayers}>
+        <div
+          className="progress-bar"
+          role="progressbar"
+          aria-valuenow={flippedCount}
+          aria-valuemin={0}
+          aria-valuemax={totalPlayers}
+          aria-hidden={isShuffling || undefined}
+        >
           <div
             className="progress-bar__fill"
             style={{ width: `${drawProgress * 100}%` }}
@@ -74,11 +101,29 @@ export default function DrawPage() {
         )}
       </header>
 
-      <div className="card-grid">
-        {players.map((player) => (
-          <Card key={player.index} player={player} onFlip={handleFlip} />
-        ))}
-      </div>
+      {!showComplete && (
+        <div
+          className={`card-grid${isShuffling ? ' card-grid--shuffling' : ''}${showSimpleShuffleOverlay ? ' card-grid--shuffling-simple' : ''}`}
+        >
+          {players.map((player) => (
+            <Card
+              key={player.index}
+              player={player}
+              onFlip={handleFlip}
+              frontNumber={shuffleFrontNumbers?.[player.index]}
+              shuffleTick={shuffleTick}
+              totalPlayers={totalPlayers}
+              disabled={isShuffling}
+              isShuffling={isShuffling}
+            />
+          ))}
+          {showSimpleShuffleOverlay && (
+            <div className="shuffle-overlay" aria-live="polite">
+              Тасуем карточки…
+            </div>
+          )}
+        </div>
+      )}
 
       {showComplete && (
         <DrawComplete

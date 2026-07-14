@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme='light'] {
   --brand-secondary: #00b894;
   --error: #d63031;
 
@@ -10,8 +11,17 @@
   --secondary-text: #718096;
 }
 
+[data-theme='dark'] {
+  --primary-bg: #1a202c;
+  --secondary-bg: #2d3748;
+  --button-primary: #4299e1;
+  --button-secondary: #2d3748;
+  --primary-text: #edf2f7;
+  --secondary-text: #a0aec0;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme='light']) {
     --primary-bg: #1a202c;
     --secondary-bg: #2d3748;
     --button-primary: #4299e1;

@@ -5,10 +5,54 @@
   padding: 0;
   background: none;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .card:disabled {
   cursor: default;
+}
+
+.card--shuffling:not(:disabled) .card__face--front {
+  animation: shuffle-card-wiggle 0.45s ease-in-out infinite;
+  animation-delay: var(--shuffle-delay, 0s);
+}
+
+.card--shuffling .card__number {
+  animation: shuffle-number-flash 0.45s ease-in-out infinite;
+  animation-delay: var(--shuffle-delay, 0s);
+}
+
+@keyframes shuffle-card-wiggle {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+  25% {
+    transform: scale(0.94) rotate(-2deg);
+  }
+  75% {
+    transform: scale(0.94) rotate(2deg);
+  }
+}
+
+@keyframes shuffle-number-flash {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.88);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card--shuffling:not(:disabled) .card__face--front,
+  .card--shuffling .card__number {
+    animation: none;
+  }
 }
 
 .card__inner {
@@ -57,9 +101,15 @@
   font-weight: 700;
 }
 
-.card__emoji {
-  font-size: 2.75rem;
-  line-height: 1;
+.card__emoji,
+.draw-card-emoji.card__emoji {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  user-select: none;
 }
 
 .card__corner-number {
@@ -79,7 +129,8 @@
   transform: rotateY(180deg) scale(0.96);
 }
 
-.card--flipped .card__emoji {
+.card--flipped .card__emoji,
+.card--flipped .draw-card-emoji.card__emoji {
   animation: emoji-pop 0.25s ease-out;
 }
 
@@ -95,7 +146,8 @@
   }
 }
 
-.card--winner.card--flipped .card__emoji {
+.card--winner.card--flipped .card__emoji,
+.card--winner.card--flipped .draw-card-emoji.card__emoji {
   animation: emoji-pop-winner 0.3s ease-out;
 }
 

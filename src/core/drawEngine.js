@@ -1,26 +1,21 @@
 export const MIN_PLAYERS = 2;
-export const MAX_PLAYERS = 100;
+export const ABSOLUTE_MAX_PLAYERS = 1000;
 export const DEFAULT_PLAYERS = 2;
 export const DEFAULT_WINNERS = 1;
 export const PLAYER_PRESETS = [3, 5, 10, 20, 50];
 export const WINNER_PRESETS = [1, 2, 3];
-export const PERFORMANCE_WARNING_THRESHOLD = 50;
 
 export function displayNumber(index) {
   return index + 1;
 }
 
-export function clampedPlayersCount(value) {
-  return Math.min(MAX_PLAYERS, Math.max(MIN_PLAYERS, value));
+export function clampedPlayersCount(value, maxParticipants = ABSOLUTE_MAX_PLAYERS) {
+  return Math.min(maxParticipants, Math.max(MIN_PLAYERS, value));
 }
 
-export function clampedWinnersCount(winners, players) {
-  const maxWinners = Math.max(1, Math.min(players - 1, MAX_PLAYERS - 1));
+export function clampedWinnersCount(winners, players, maxParticipants = ABSOLUTE_MAX_PLAYERS) {
+  const maxWinners = Math.max(1, Math.min(players - 1, maxParticipants - 1));
   return Math.min(maxWinners, Math.max(1, winners));
-}
-
-export function shouldWarnAboutPerformance(participants) {
-  return participants > PERFORMANCE_WARNING_THRESHOLD;
 }
 
 function shuffle(array) {

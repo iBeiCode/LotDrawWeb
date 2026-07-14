@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import { drawSummary, shareText, winnerOutcomeText } from '../core/formatting.js';
+import { shareTextContent } from '../utils/share.js';
+import DrawCardEmojiImage from './DrawCardEmojiImage.jsx';
 import PrimaryButton from './PrimaryButton.jsx';
 
 export default function DrawComplete({
@@ -16,31 +18,17 @@ export default function DrawComplete({
     [totalPlayers, winnerCount, winnerIndices]
   );
 
-  const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ text: shareContent });
-        return;
-      } catch (error) {
-        if (error.name === 'AbortError') return;
-      }
-    }
-
-    try {
-      await navigator.clipboard.writeText(shareContent);
+  const handleShare = () => {
+    shareTextContent(shareContent, () => {
       setCopiedFeedback(true);
       setTimeout(() => setCopiedFeedback(false), 2000);
-    } catch {
-      // clipboard unavailable
-    }
+    });
   };
 
   return (
     <div className="dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="draw-complete-title">
       <div className="dialog">
-        <div className="dialog__icon" aria-hidden="true">
-          👍
-        </div>
+        <DrawCardEmojiImage isWinner size={56} className="dialog__icon-image" />
         <h2 id="draw-complete-title" className="dialog__title">
           Жребий завершён!
         </h2>

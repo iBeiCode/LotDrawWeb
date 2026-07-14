@@ -1,150 +1,216 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import {
-  clampedPlayersCount,
-  clampedWinnersCount,
   DEFAULT_PLAYERS,
   DEFAULT_WINNERS,
-  MAX_PLAYERS,
   MIN_PLAYERS,
   PLAYER_PRESETS,
-  shouldWarnAboutPerformance,
   WINNER_PRESETS,
 } from '../core/drawEngine.js';
+import { participantsPhrase, winnersPhrase } from '../core/formatting.js';
 import PresetRow from '../components/PresetRow.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
+import WheelPicker from '../components/WheelPicker.jsx';
+import { ArchiveBoxIcon, GearIcon } from '../components/icons/ToolbarIcons.jsx';
+import Onboarding from '../components/Onboarding.jsx';
+import { useAppSettings } from '../hooks/useAppSettings.jsx';
+import {
+  clampedPlayersCount as clampPlayersFromStorage,
+  clampedWinnersCount as clampWinnersFromStorage,
+  getRememberLastValues,
+  hasCompletedDraw,
+  hasSavedDrawCounts,
+  hasSeenOnboarding,
+  loadCompletedDraw,
+  loadLastDrawCounts,
+  persistLastDrawCounts,
+} from '../storage/appSettings.js';
 
-function Stepper({ value, min, max, onChange }) {
-  return (
-    <div className="stepper">
-      <button
-        type="button"
-        className="stepper__button"
-        onClick={() => onChange(value - 1)}
-        disabled={value <= min}
-        aria-label="Уменьшить"
-      >
-        −
-      </button>
-      <span className="stepper__value" aria-live="polite">
-        {value}
-      </span>
-      <button
-        type="button"
-        className="stepper__button"
-        onClick={() => onChange(value + 1)}
-        disabled={value >= max}
-        aria-label="Увеличить"
-      >
-        +
-      </button>
-    </div>
-  );
-}
+function readInitialCounts() {
+  if (!getRememberLastValues() || !hasSavedDrawCounts()) {
+    return { players: DEFAULT_PLAYERS, winners: DEFAULT_WINNERS };
+  }
 
-function PerformanceWarning({ onContinue, onCancel }) {
-  return (
-    <div className="alert-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="perf-warning-title">
-      <div className="alert">
-        <h2 id="perf-warning-title" className="alert__title">
-          Много участников
-        </h2>
-        <p className="alert__message">
-          Большое число карточек может замедлить интерфейс. Рекомендуем уменьшить количество участников.
-        </p>
-        <div className="alert__actions">
-          <button type="button" className="alert__button alert__button--secondary" onClick={onCancel}>
-            Отмена
-          </button>
-          <button type="button" className="alert__button alert__button--primary" onClick={onContinue}>
-            Продолжить
-          </button>
-        </div>
-      </div>
-    </div>
-  );
+  const last = loadLastDrawCounts();
+  const players = clampPlayersFromStorage(last.players);
+  const winners = clampWinnersFromStorage(last.winners, players);
+  return { players, winners };
 }
 
 export default function HomePage() {
   const navigate = useNavigate();
-  const [players, setPlayers] = useState(DEFAULT_PLAYERS);
-  const [winners, setWinners] = useState(DEFAULT_WINNERS);
-  const [showWarning, setShowWarning] = useState(false);
+  const {
+    maxParticipants,
+    rememberLastValues,
+    clampedPlayersCount,
+    clampedWinnersCount,
+  } = useAppSettings();
+  const [players, setPlayers] = useState(() => readInitialCounts().players);
+  const [winners, setWinners] = useState(() => readInitialCounts().winners);
+  const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
 
-  const maxWinners = Math.max(1, Math.min(players, MAX_PLAYERS) - 1);
+  useEffect(() => {
+    if (!showOnboarding) return undefined;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showOnboarding]);
+
+  const maxWinners = Math.max(1, Math.min(players, maxParticipants) - 1);
+  const showLastChoice = rememberLastValues && hasSavedDrawCounts();
+  const completedDraw = hasCompletedDraw() ? loadCompletedDraw() : null;
+
+  const persistCountsIfNeeded = useCallback(
+    (nextPlayers, nextWinners) => {
+      if (!rememberLastValues) return;
+      persistLastDrawCounts(nextPlayers, nextWinners);
+    },
+    [rememberLastValues]
+  );
+
+  const restoreCountsIfNeeded = useCallback(() => {
+    if (!rememberLastValues || !hasSavedDrawCounts()) return;
+    const last = loadLastDrawCounts();
+    const nextPlayers = clampedPlayersCount(last.players);
+    const nextWinners = clampedWinnersCount(last.winners, nextPlayers);
+    setPlayers(nextPlayers);
+    setWinners(nextWinners);
+  }, [rememberLastValues, clampedPlayersCount, clampedWinnersCount]);
+
+  useEffect(() => {
+    if (!rememberLastValues) return;
+    restoreCountsIfNeeded();
+  }, [rememberLastValues, restoreCountsIfNeeded]);
+
+  useEffect(() => {
+    setPlayers((prev) => {
+      const nextPlayers = clampedPlayersCount(prev);
+      setWinners((prevWinners) => clampedWinnersCount(prevWinners, nextPlayers));
+      return nextPlayers;
+    });
+  }, [maxParticipants, clampedPlayersCount, clampedWinnersCount]);
+
+  const navigateToDraw = useCallback(
+    (nextPlayers, nextWinners) => {
+      persistCountsIfNeeded(nextPlayers, nextWinners);
+      navigate(`/draw?players=${nextPlayers}&winners=${nextWinners}`);
+    },
+    [navigate, persistCountsIfNeeded]
+  );
+
+  const attemptStartDraw = useCallback(
+    (overridePlayers = players, overrideWinners = winners) => {
+      const nextPlayers = clampedPlayersCount(overridePlayers);
+      const nextWinners = clampedWinnersCount(overrideWinners, nextPlayers);
+      navigateToDraw(nextPlayers, nextWinners);
+    },
+    [players, winners, clampedPlayersCount, clampedWinnersCount, navigateToDraw]
+  );
 
   const handlePlayersChange = (value) => {
     const nextPlayers = clampedPlayersCount(value);
+    const nextWinners = clampedWinnersCount(winners, nextPlayers);
     setPlayers(nextPlayers);
-    setWinners((prev) => clampedWinnersCount(prev, nextPlayers));
+    setWinners(nextWinners);
+    persistCountsIfNeeded(nextPlayers, nextWinners);
   };
 
   const handleWinnersChange = (value) => {
-    setWinners(clampedWinnersCount(value, players));
+    const nextWinners = clampedWinnersCount(value, players);
+    setWinners(nextWinners);
+    persistCountsIfNeeded(players, nextWinners);
   };
 
-  const startDraw = () => {
-    navigate(`/draw?players=${players}&winners=${winners}`);
+  const handleRepeatLastDraw = () => {
+    if (!completedDraw) return;
+
+    const nextPlayers = clampedPlayersCount(completedDraw.players);
+    const nextWinners = clampedWinnersCount(completedDraw.winners, nextPlayers);
+    setPlayers(nextPlayers);
+    setWinners(nextWinners);
+    attemptStartDraw(nextPlayers, nextWinners);
   };
 
-  const attemptStartDraw = () => {
-    if (shouldWarnAboutPerformance(players)) {
-      setShowWarning(true);
-    } else {
-      startDraw();
-    }
-  };
+  const lastChoiceText = showLastChoice
+    ? (() => {
+        const last = loadLastDrawCounts();
+        return `Последний выбор: ${participantsPhrase(last.players)}, ${winnersPhrase(last.winners)}`;
+      })()
+    : null;
 
   return (
-    <div className="page fade-in">
-      <h1 className="page-title">Жеребьёвка</h1>
+    <div className="page home-page fade-in">
+      <div className="home-page__body">
+        <header className="home-header">
+          <div className="home-header__spacer" aria-hidden="true" />
+          <h1 className="page-title home-header__title">Жеребьёвка</h1>
+          <nav className="home-toolbar" aria-label="Дополнительные разделы">
+            <Link to="/settings" className="home-toolbar__button" aria-label="Настройки">
+              <GearIcon />
+            </Link>
+            <Link to="/history" className="home-toolbar__button" aria-label="История">
+              <ArchiveBoxIcon />
+            </Link>
+          </nav>
+        </header>
 
-      <div className="spacer" />
+        {lastChoiceText && (
+          <p className="home-last-choice">{lastChoiceText}</p>
+        )}
 
-      <p className="section-label">Количество участников</p>
-      <PresetRow
-        title="Быстрый выбор"
-        values={PLAYER_PRESETS}
-        selected={players}
-        maxValue={MAX_PLAYERS}
-        onSelect={handlePlayersChange}
-      />
-      <Stepper
-        value={players}
-        min={MIN_PLAYERS}
-        max={MAX_PLAYERS}
-        onChange={handlePlayersChange}
-      />
+        <div className="spacer" />
 
-      <p className="section-label section-label--spaced">Количество победителей</p>
-      <PresetRow
-        title="Быстрый выбор"
-        values={WINNER_PRESETS}
-        selected={winners}
-        maxValue={maxWinners}
-        onSelect={handleWinnersChange}
-      />
-      <Stepper
-        value={winners}
-        min={1}
-        max={maxWinners}
-        onChange={handleWinnersChange}
-      />
-
-      <div className="spacer" />
-
-      <PrimaryButton onClick={attemptStartDraw}>
-        Кинуть жребий
-      </PrimaryButton>
-
-      {showWarning && (
-        <PerformanceWarning
-          onContinue={() => {
-            setShowWarning(false);
-            startDraw();
-          }}
-          onCancel={() => setShowWarning(false)}
+        <p className="section-label">Количество участников</p>
+        <PresetRow
+          title="Быстрый выбор"
+          values={PLAYER_PRESETS}
+          selected={players}
+          maxValue={maxParticipants}
+          onSelect={handlePlayersChange}
         />
+        <WheelPicker
+          min={MIN_PLAYERS}
+          max={maxParticipants}
+          value={players}
+          onChange={handlePlayersChange}
+          ariaLabel="Количество участников"
+        />
+
+        <p className="section-label section-label--spaced">Количество победителей</p>
+        <PresetRow
+          title="Быстрый выбор"
+          values={WINNER_PRESETS}
+          selected={winners}
+          maxValue={maxWinners}
+          onSelect={handleWinnersChange}
+        />
+        <WheelPicker
+          min={1}
+          max={maxWinners}
+          value={winners}
+          onChange={handleWinnersChange}
+          ariaLabel="Количество победителей"
+        />
+
+        {completedDraw && (
+          <button type="button" className="home-repeat-button" onClick={handleRepeatLastDraw}>
+            Повторить прошлый жребий
+          </button>
+        )}
+      </div>
+
+      <footer className="home-footer">
+        <PrimaryButton onClick={() => attemptStartDraw()}>
+          Кинуть жребий
+        </PrimaryButton>
+      </footer>
+
+      {showOnboarding && (
+        <Onboarding onDismiss={() => setShowOnboarding(false)} />
       )}
     </div>
   );
