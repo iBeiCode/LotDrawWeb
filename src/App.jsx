@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { HashRouter, Route, Routes } from 'react-router-dom';
 import { AppSettingsProvider } from './hooks/useAppSettings.jsx';
 import DrawPage from './pages/DrawPage.jsx';
 import HistoryPage from './pages/HistoryPage.jsx';
@@ -8,7 +8,7 @@ import SettingsPage from './pages/SettingsPage.jsx';
 export default function App() {
   return (
     <AppSettingsProvider>
-      <BrowserRouter>
+      <HashRouter>
         <div className="app">
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -17,7 +17,7 @@ export default function App() {
             <Route path="/history" element={<HistoryPage />} />
           </Routes>
         </div>
-      </BrowserRouter>
+      </HashRouter>
     </AppSettingsProvider>
   );
 }
