@@ -1,11 +1,13 @@
+const base = import.meta.env.BASE_URL;
+
 const EMOJI_ASSETS = {
   winner: {
-    src: '/images/emoji_winner@2x.png',
-    srcSet: '/images/emoji_winner@2x.png 2x, /images/emoji_winner@3x.png 3x',
+    src: `${base}images/emoji_winner@2x.png`,
+    srcSet: `${base}images/emoji_winner@2x.png 2x, ${base}images/emoji_winner@3x.png 3x`,
   },
   loser: {
-    src: '/images/emoji_loser@2x.png',
-    srcSet: '/images/emoji_loser@2x.png 2x, /images/emoji_loser@3x.png 3x',
+    src: `${base}images/emoji_loser@2x.png`,
+    srcSet: `${base}images/emoji_loser@2x.png 2x, ${base}images/emoji_loser@3x.png 3x`,
   },
 };
 
