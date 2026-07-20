@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { hapticImpact } from '../utils/telegram.js';
 import {
   generatePlayers,
   displayNumber,
@@ -91,6 +92,7 @@ export function useDraw(totalPlayers, winnerCount) {
         // never block the completion screen on storage errors
       }
 
+      hapticImpact('medium');
       setShowComplete(true);
     }, COMPLETE_DELAY_MS);
   }, [cancelCompleteTimeout, totalPlayers, winnerCount]);
@@ -117,6 +119,8 @@ export function useDraw(totalPlayers, winnerCount) {
       setPlayers((prev) => {
         const target = prev.find((p) => p.index === index);
         if (!target || target.isFlipped) return prev;
+
+        hapticImpact('light');
 
         const next = prev.map((p) =>
           p.index === index ? { ...p, isFlipped: true } : p

@@ -4,11 +4,8 @@ import {
   DEFAULT_PLAYERS,
   DEFAULT_WINNERS,
   MIN_PLAYERS,
-  PLAYER_PRESETS,
-  WINNER_PRESETS,
 } from '../core/drawEngine.js';
 import { participantsPhrase, winnersPhrase } from '../core/formatting.js';
-import PresetRow from '../components/PresetRow.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
 import WheelPicker from '../components/WheelPicker.jsx';
 import { ArchiveBoxIcon, GearIcon } from '../components/icons/ToolbarIcons.jsx';
@@ -165,13 +162,7 @@ export default function HomePage() {
         <div className="spacer" />
 
         <p className="section-label">Количество участников</p>
-        <PresetRow
-          title="Быстрый выбор"
-          values={PLAYER_PRESETS}
-          selected={players}
-          maxValue={maxParticipants}
-          onSelect={handlePlayersChange}
-        />
+        <p className="section-hint">Прокрутите колесо и выберите число</p>
         <WheelPicker
           min={MIN_PLAYERS}
           max={maxParticipants}
@@ -181,13 +172,7 @@ export default function HomePage() {
         />
 
         <p className="section-label section-label--spaced">Количество победителей</p>
-        <PresetRow
-          title="Быстрый выбор"
-          values={WINNER_PRESETS}
-          selected={winners}
-          maxValue={maxWinners}
-          onSelect={handleWinnersChange}
-        />
+        <p className="section-hint">Сколько карточек выиграют</p>
         <WheelPicker
           min={1}
           max={maxWinners}
