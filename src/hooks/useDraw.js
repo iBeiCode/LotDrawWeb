@@ -20,6 +20,7 @@ function saveDrawToHistoryIfNeeded(players, totalPlayers, winnerCount) {
   const winnerDisplayNumbers = getWinnerIndices(players).map(displayNumber);
   saveHistoryRecord(
     createRecord({
+      type: 'draw',
       totalPlayers,
       winnerCount,
       winnerIndices: winnerDisplayNumbers,

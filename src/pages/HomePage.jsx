@@ -142,8 +142,15 @@ export default function HomePage() {
   return (
     <div className="page home-page fade-in">
       <div className="home-page__body">
-        <header className="home-header">
-          <div className="home-header__spacer" aria-hidden="true" />
+        <header className="home-header home-header--with-back">
+          <button
+            type="button"
+            className="home-header__back"
+            onClick={() => navigate('/')}
+            aria-label="К выбору режима"
+          >
+            ←
+          </button>
           <h1 className="page-title home-header__title">Жеребьёвка</h1>
           <nav className="home-toolbar" aria-label="Дополнительные разделы">
             <Link to="/settings" className="home-toolbar__button" aria-label="Настройки">

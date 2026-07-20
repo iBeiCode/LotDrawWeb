@@ -42,7 +42,7 @@ export default function DrawComplete({
           {copiedFeedback ? 'Скопировано' : 'Поделиться результатом'}
         </PrimaryButton>
         <button type="button" className="dialog__link" onClick={onGoHome}>
-          На главную
+          К настройке жребия
         </button>
         <button type="button" className="dialog__secondary" onClick={onRestart}>
           Новый жребий

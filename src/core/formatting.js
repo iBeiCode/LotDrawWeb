@@ -1,4 +1,6 @@
+import { coinSideLabel } from './coinFlip.js';
 import { displayNumber } from './drawEngine.js';
+import { recordType } from '../storage/drawHistory.js';
 
 function russianPlural(count, one, few, many) {
   const mod10 = count % 10;
@@ -34,6 +36,14 @@ export function drawSummary(players, winnerCount) {
   return `${participantsPhrase(players)} · ${winnersPhrase(winnerCount)}`;
 }
 
+export function coinSummary() {
+  return 'Бросок монетки';
+}
+
+export function coinOutcomeText(side) {
+  return coinSideLabel(side);
+}
+
 export function winnerOutcomeText(zeroBasedIndices) {
   const displayNumbers = zeroBasedIndices.map(displayNumber).sort((a, b) => a - b);
   return winnerOutcomeTextFromDisplayNumbers(displayNumbers);
@@ -52,15 +62,18 @@ export function winnerOutcomeTextFromDisplayNumbers(displayNumbers) {
   }
 }
 
+function formatShareDate(date) {
+  return new Intl.DateTimeFormat('ru-RU', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(date);
+}
+
 export function shareText(players, winnerCount, zeroBasedWinnerIndices, date = new Date()) {
   const lines = ['Жеребьёвка — LotDraw'];
 
   if (date) {
-    const formatter = new Intl.DateTimeFormat('ru-RU', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
-    lines.push(formatter.format(date));
+    lines.push(formatShareDate(date));
   }
 
   lines.push(drawSummary(players, winnerCount));
@@ -68,15 +81,40 @@ export function shareText(players, winnerCount, zeroBasedWinnerIndices, date = n
   return lines.join('\n');
 }
 
-export function shareTextForRecord(record) {
-  const lines = ['Жеребьёвка — LotDraw'];
-  const formatter = new Intl.DateTimeFormat('ru-RU', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+export function coinShareText(side, date = new Date()) {
+  const lines = ['Монетка — LotDraw'];
 
-  lines.push(formatter.format(new Date(record.date)));
+  if (date) {
+    lines.push(formatShareDate(date));
+  }
+
+  lines.push(coinSummary());
+  lines.push(coinOutcomeText(side));
+  return lines.join('\n');
+}
+
+export function shareTextForRecord(record) {
+  if (recordType(record) === 'coin') {
+    return coinShareText(record.side, new Date(record.date));
+  }
+
+  const lines = ['Жеребьёвка — LotDraw'];
+  lines.push(formatShareDate(new Date(record.date)));
   lines.push(drawSummary(record.totalPlayers, record.winnerCount));
   lines.push(winnerOutcomeTextFromDisplayNumbers(record.winnerIndices));
   return lines.join('\n');
+}
+
+export function historySummaryForRecord(record) {
+  if (recordType(record) === 'coin') {
+    return coinSummary();
+  }
+  return drawSummary(record.totalPlayers, record.winnerCount);
+}
+
+export function historyOutcomeForRecord(record) {
+  if (recordType(record) === 'coin') {
+    return coinOutcomeText(record.side);
+  }
+  return winnerOutcomeTextFromDisplayNumbers(record.winnerIndices);
 }

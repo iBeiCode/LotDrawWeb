@@ -89,12 +89,31 @@ function createRecordId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 
-export function createRecord({ totalPlayers, winnerCount, winnerIndices }) {
-  return {
+export function createRecord({
+  type = 'draw',
+  totalPlayers,
+  winnerCount,
+  winnerIndices,
+  side,
+}) {
+  const base = {
     id: createRecordId(),
     date: new Date().toISOString(),
+    type,
+  };
+
+  if (type === 'coin') {
+    return { ...base, side };
+  }
+
+  return {
+    ...base,
     totalPlayers,
     winnerCount,
     winnerIndices,
   };
+}
+
+export function recordType(record) {
+  return record?.type === 'coin' ? 'coin' : 'draw';
 }

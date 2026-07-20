@@ -2,9 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ScreenHeader from '../components/ScreenHeader.jsx';
 import {
-  drawSummary,
+  historyOutcomeForRecord,
+  historySummaryForRecord,
   shareTextForRecord,
-  winnerOutcomeTextFromDisplayNumbers,
 } from '../core/formatting.js';
 import { clearAll, deleteById, groupedByDate } from '../storage/drawHistory.js';
 import { shareTextContent } from '../utils/share.js';
@@ -24,10 +24,10 @@ function HistoryRecordRow({ record, onDelete, onShareCopied }) {
           {timeFormatter.format(new Date(record.date))}
         </h3>
         <p className="history-record__summary">
-          {drawSummary(record.totalPlayers, record.winnerCount)}
+          {historySummaryForRecord(record)}
         </p>
         <p className="history-record__outcome">
-          {winnerOutcomeTextFromDisplayNumbers(record.winnerIndices)}
+          {historyOutcomeForRecord(record)}
         </p>
       </div>
       <div className="history-record__actions">
@@ -54,7 +54,7 @@ function DeleteRecordDialog({ onConfirm, onCancel }) {
           Удалить запись?
         </h2>
         <p className="alert__message">
-          Эта жеребьёвка будет удалена из истории без возможности восстановления.
+          Эта запись будет удалена из истории без возможности восстановления.
         </p>
         <div className="alert__actions">
           <button type="button" className="alert__button alert__button--secondary" onClick={onCancel}>
@@ -77,7 +77,7 @@ function ClearHistoryDialog({ onConfirm, onCancel }) {
           Удалить всю историю?
         </h2>
         <p className="alert__message">
-          Все сохранённые жеребьёвки будут удалены без возможности восстановления.
+          Все сохранённые результаты будут удалены без возможности восстановления.
         </p>
         <div className="alert__actions">
           <button type="button" className="alert__button alert__button--secondary" onClick={onCancel}>
@@ -158,7 +158,7 @@ export default function HistoryPage() {
 
       {isEmpty ? (
         <div className="history-empty">
-          <p className="history-empty__title">Пока нет сохранённых жеребьёвок</p>
+          <p className="history-empty__title">Пока нет сохранённых результатов</p>
           <p className="history-empty__hint">
             Включите «Сохранять историю жеребьёвок» в настройках
           </p>

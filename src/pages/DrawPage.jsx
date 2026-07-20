@@ -72,7 +72,7 @@ export default function DrawPage() {
 
   return (
     <div className={`page${showComplete ? ' page--modal-open' : ''}`}>
-      <button type="button" className="back-button" onClick={() => navigate('/')}>
+      <button type="button" className="back-button" onClick={() => navigate('/lot')}>
         ← Назад
       </button>
 
@@ -131,7 +131,7 @@ export default function DrawPage() {
           winnerCount={winnerCount}
           winnerIndices={winnerIndices}
           onRestart={reset}
-          onGoHome={() => navigate('/')}
+          onGoHome={() => navigate('/lot')}
         />
       )}
     </div>

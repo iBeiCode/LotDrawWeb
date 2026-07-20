@@ -1,8 +1,10 @@
 import { HashRouter, Route, Routes } from 'react-router-dom';
 import { AppSettingsProvider } from './hooks/useAppSettings.jsx';
+import CoinFlipPage from './pages/CoinFlipPage.jsx';
 import DrawPage from './pages/DrawPage.jsx';
 import HistoryPage from './pages/HistoryPage.jsx';
 import HomePage from './pages/HomePage.jsx';
+import ModeSelectPage from './pages/ModeSelectPage.jsx';
 import SettingsPage from './pages/SettingsPage.jsx';
 
 export default function App() {
@@ -11,8 +13,10 @@ export default function App() {
       <HashRouter>
         <div className="app">
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<ModeSelectPage />} />
+            <Route path="/lot" element={<HomePage />} />
             <Route path="/draw" element={<DrawPage />} />
+            <Route path="/coin" element={<CoinFlipPage />} />
             <Route path="/settings" element={<SettingsPage />} />
             <Route path="/history" element={<HistoryPage />} />
           </Routes>
