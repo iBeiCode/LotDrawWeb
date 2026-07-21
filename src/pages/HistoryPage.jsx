@@ -134,7 +134,7 @@ export default function HistoryPage() {
   return (
     <div className="page history-page">
       <div className="history-page__top">
-        <button type="button" className="back-button" onClick={() => navigate('/')}>
+        <button type="button" className="back-button" onClick={() => navigate(-1)}>
           ← Назад
         </button>
         {!isEmpty && (

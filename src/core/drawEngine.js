@@ -26,28 +26,44 @@ function shuffle(array) {
   return array;
 }
 
-export function generatePlayers(totalPlayers, winnerCount) {
-  let remainingWinners = winnerCount;
+export function generatePlayers(totalPlayers, winnerCount, labels = null) {
+  const count = labels?.length ? labels.length : totalPlayers;
+  const winnerTarget = Math.min(Math.max(1, winnerCount), Math.max(1, count - 1));
   const players = [];
 
-  for (let i = 0; i < totalPlayers; i++) {
-    const isWinner = remainingWinners > 0;
-    if (isWinner) remainingWinners--;
-    players.push({ index: i, isWinner, isFlipped: false });
+  for (let i = 0; i < count; i++) {
+    players.push({
+      index: i,
+      isWinner: false,
+      isFlipped: false,
+      label: labels?.[i] ?? null,
+    });
+  }
+
+  // Сначала перемешиваем участников, потом назначаем победителей —
+  // иначе при именах всегда выигрывают первые N из списка.
+  shuffle(players);
+  for (let i = 0; i < winnerTarget; i++) {
+    players[i].isWinner = true;
   }
 
   shuffle(players);
-  for (let i = 0; i < totalPlayers; i++) {
-    const player = players.splice(i, 1)[0];
-    player.index = i;
-    players.splice(i, 0, player);
+  for (let i = 0; i < count; i++) {
+    players[i].index = i;
   }
 
-  return shuffle(players);
+  return players;
 }
 
 export function getWinnerIndices(players) {
   return players.filter((p) => p.isWinner).map((p) => p.index).sort((a, b) => a - b);
+}
+
+export function getWinnerLabels(players) {
+  return players
+    .filter((p) => p.isWinner)
+    .sort((a, b) => a.index - b.index)
+    .map((p) => p.label || `№${displayNumber(p.index)}`);
 }
 
 export function isDrawComplete(players) {

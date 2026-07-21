@@ -94,7 +94,11 @@ export function createRecord({
   totalPlayers,
   winnerCount,
   winnerIndices,
+  winnerLabels,
   side,
+  label,
+  optionCount,
+  values,
 }) {
   const base = {
     id: createRecordId(),
@@ -106,14 +110,26 @@ export function createRecord({
     return { ...base, side };
   }
 
+  if (type === 'wheel') {
+    return { ...base, label, optionCount };
+  }
+
+  if (type === 'dice') {
+    return { ...base, values };
+  }
+
   return {
     ...base,
     totalPlayers,
     winnerCount,
     winnerIndices,
+    ...(winnerLabels?.length ? { winnerLabels } : {}),
   };
 }
 
 export function recordType(record) {
-  return record?.type === 'coin' ? 'coin' : 'draw';
+  if (record?.type === 'coin') return 'coin';
+  if (record?.type === 'wheel') return 'wheel';
+  if (record?.type === 'dice') return 'dice';
+  return 'draw';
 }

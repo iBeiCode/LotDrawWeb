@@ -4,6 +4,7 @@ import {
   generatePlayers,
   displayNumber,
   getWinnerIndices,
+  getWinnerLabels,
   isDrawComplete,
 } from '../core/drawEngine.js';
 import { getIsSaveResults, persistCompletedDraw } from '../storage/appSettings.js';
@@ -14,16 +15,19 @@ export const SHUFFLE_MIN_MS = 1000;
 export const SHUFFLE_MAX_MS = 2000;
 export const SHUFFLE_ANIMATED_MAX = 50;
 
-function saveDrawToHistoryIfNeeded(players, totalPlayers, winnerCount) {
+function saveDrawToHistoryIfNeeded(players, totalPlayers, winnerCount, labels) {
   if (!getIsSaveResults()) return;
 
   const winnerDisplayNumbers = getWinnerIndices(players).map(displayNumber);
+  const winnerLabels = labels?.length ? getWinnerLabels(players) : undefined;
+
   saveHistoryRecord(
     createRecord({
       type: 'draw',
       totalPlayers,
       winnerCount,
       winnerIndices: winnerDisplayNumbers,
+      winnerLabels,
     })
   );
 }
@@ -39,15 +43,22 @@ function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-export function useDraw(totalPlayers, winnerCount) {
+export function useDraw(totalPlayers, winnerCount, labels = null) {
+  const labelsKey = labels?.length ? labels.join('\u0001') : '';
+  const stableLabels = useMemo(
+    () => (labelsKey ? labelsKey.split('\u0001') : null),
+    [labelsKey]
+  );
+
   const [players, setPlayers] = useState(() =>
-    generatePlayers(totalPlayers, winnerCount)
+    generatePlayers(totalPlayers, winnerCount, stableLabels)
   );
   const [showComplete, setShowComplete] = useState(false);
   const [isShuffling, setIsShuffling] = useState(true);
   const completeTimeoutRef = useRef(null);
   const shuffleTimeoutRef = useRef(null);
   const playersRef = useRef(players);
+  const pendingCompleteRef = useRef(false);
 
   playersRef.current = players;
 
@@ -77,9 +88,12 @@ export function useDraw(totalPlayers, winnerCount) {
   }, [cancelShuffleTimeout]);
 
   useEffect(() => {
+    pendingCompleteRef.current = false;
+    setPlayers(generatePlayers(totalPlayers, winnerCount, stableLabels));
+    setShowComplete(false);
     startShuffle();
     return cancelShuffleTimeout;
-  }, [totalPlayers, winnerCount, startShuffle, cancelShuffleTimeout]);
+  }, [totalPlayers, winnerCount, stableLabels, startShuffle, cancelShuffleTimeout]);
 
   const scheduleComplete = useCallback(() => {
     cancelCompleteTimeout();
@@ -87,7 +101,12 @@ export function useDraw(totalPlayers, winnerCount) {
       completeTimeoutRef.current = null;
 
       try {
-        saveDrawToHistoryIfNeeded(playersRef.current, totalPlayers, winnerCount);
+        saveDrawToHistoryIfNeeded(
+          playersRef.current,
+          totalPlayers,
+          winnerCount,
+          stableLabels
+        );
         persistCompletedDraw(totalPlayers, winnerCount);
       } catch {
         // never block the completion screen on storage errors
@@ -96,7 +115,13 @@ export function useDraw(totalPlayers, winnerCount) {
       hapticImpact('medium');
       setShowComplete(true);
     }, COMPLETE_DELAY_MS);
-  }, [cancelCompleteTimeout, totalPlayers, winnerCount]);
+  }, [cancelCompleteTimeout, totalPlayers, winnerCount, stableLabels]);
+
+  useEffect(() => {
+    if (!pendingCompleteRef.current) return;
+    pendingCompleteRef.current = false;
+    scheduleComplete();
+  }, [players, scheduleComplete]);
 
   useEffect(
     () => () => {
@@ -114,36 +139,43 @@ export function useDraw(totalPlayers, winnerCount) {
   const drawProgress = totalPlayers > 0 ? flippedCount / totalPlayers : 0;
 
   const winnerIndices = useMemo(() => getWinnerIndices(players), [players]);
+  const winnerLabels = useMemo(() => getWinnerLabels(players), [players]);
 
-  const flipCard = useCallback(
-    (index) => {
-      setPlayers((prev) => {
-        const target = prev.find((p) => p.index === index);
-        if (!target || target.isFlipped) return prev;
+  const flipCard = useCallback((index) => {
+    let didFlip = false;
+    let shouldComplete = false;
 
-        hapticImpact('light');
+    setPlayers((prev) => {
+      const target = prev.find((p) => p.index === index);
+      if (!target || target.isFlipped) return prev;
 
-        const next = prev.map((p) =>
-          p.index === index ? { ...p, isFlipped: true } : p
-        );
+      didFlip = true;
+      const next = prev.map((p) =>
+        p.index === index ? { ...p, isFlipped: true } : p
+      );
 
-        if (isDrawComplete(next)) {
-          playersRef.current = next;
-          scheduleComplete();
-        }
+      if (isDrawComplete(next)) {
+        playersRef.current = next;
+        shouldComplete = true;
+      }
 
-        return next;
-      });
-    },
-    [scheduleComplete]
-  );
+      return next;
+    });
+
+    if (!didFlip) return;
+    hapticImpact('light');
+    if (shouldComplete) {
+      pendingCompleteRef.current = true;
+    }
+  }, []);
 
   const reset = useCallback(() => {
     cancelCompleteTimeout();
-    setPlayers(generatePlayers(totalPlayers, winnerCount));
+    pendingCompleteRef.current = false;
+    setPlayers(generatePlayers(totalPlayers, winnerCount, stableLabels));
     setShowComplete(false);
     startShuffle();
-  }, [totalPlayers, winnerCount, cancelCompleteTimeout, startShuffle]);
+  }, [totalPlayers, winnerCount, stableLabels, cancelCompleteTimeout, startShuffle]);
 
   const dismissComplete = useCallback(() => {
     cancelCompleteTimeout();
@@ -155,6 +187,7 @@ export function useDraw(totalPlayers, winnerCount) {
     flippedCount,
     drawProgress,
     winnerIndices,
+    winnerLabels,
     showComplete,
     isShuffling,
     flipCard,

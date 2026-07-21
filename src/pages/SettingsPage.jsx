@@ -26,7 +26,7 @@ export default function SettingsPage() {
 
   return (
     <div className="page settings-page">
-      <button type="button" className="back-button" onClick={() => navigate('/')}>
+      <button type="button" className="back-button" onClick={() => navigate(-1)}>
         ← Назад
       </button>
 

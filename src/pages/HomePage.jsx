@@ -6,11 +6,14 @@ import {
   MIN_PLAYERS,
 } from '../core/drawEngine.js';
 import { participantsPhrase, winnersPhrase } from '../core/formatting.js';
+import OptionListEditor from '../components/OptionListEditor.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
+import SegmentedControl from '../components/SegmentedControl.jsx';
 import WheelPicker from '../components/WheelPicker.jsx';
 import { ArchiveBoxIcon, GearIcon } from '../components/icons/ToolbarIcons.jsx';
 import Onboarding from '../components/Onboarding.jsx';
 import { useAppSettings } from '../hooks/useAppSettings.jsx';
+import { useOptionList } from '../hooks/useOptionList.js';
 import {
   clampedPlayersCount as clampPlayersFromStorage,
   clampedWinnersCount as clampWinnersFromStorage,
@@ -22,6 +25,12 @@ import {
   loadLastDrawCounts,
   persistLastDrawCounts,
 } from '../storage/appSettings.js';
+import { saveDrawSession } from '../storage/drawSession.js';
+
+const SETUP_MODES = [
+  { value: 'count', label: 'По числу' },
+  { value: 'list', label: 'По списку' },
+];
 
 function readInitialCounts() {
   if (!getRememberLastValues() || !hasSavedDrawCounts()) {
@@ -42,24 +51,32 @@ export default function HomePage() {
     clampedPlayersCount,
     clampedWinnersCount,
   } = useAppSettings();
+  const [setupMode, setSetupMode] = useState('count');
   const [players, setPlayers] = useState(() => readInitialCounts().players);
   const [winners, setWinners] = useState(() => readInitialCounts().winners);
+  const [listWinners, setListWinners] = useState(1);
   const [showOnboarding, setShowOnboarding] = useState(() => !hasSeenOnboarding());
+  const [saveFeedback, setSaveFeedback] = useState(false);
+
+  const optionList = useOptionList({ minItems: MIN_PLAYERS, scope: 'lot' });
 
   useEffect(() => {
     if (!showOnboarding) return undefined;
-
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
     return () => {
       document.body.style.overflow = previousOverflow;
     };
   }, [showOnboarding]);
 
   const maxWinners = Math.max(1, Math.min(players, maxParticipants) - 1);
-  const showLastChoice = rememberLastValues && hasSavedDrawCounts();
+  const listMaxWinners = Math.max(1, optionList.items.length - 1);
+  const showLastChoice = rememberLastValues && hasSavedDrawCounts() && setupMode === 'count';
   const completedDraw = hasCompletedDraw() ? loadCompletedDraw() : null;
+
+  useEffect(() => {
+    setListWinners((prev) => Math.min(Math.max(1, prev), Math.max(1, listMaxWinners)));
+  }, [listMaxWinners]);
 
   const persistCountsIfNeeded = useCallback(
     (nextPlayers, nextWinners) => {
@@ -91,22 +108,40 @@ export default function HomePage() {
     });
   }, [maxParticipants, clampedPlayersCount, clampedWinnersCount]);
 
-  const navigateToDraw = useCallback(
-    (nextPlayers, nextWinners) => {
+  const startDraw = useCallback(
+    (nextPlayers, nextWinners, labels = null) => {
       persistCountsIfNeeded(nextPlayers, nextWinners);
-      navigate(`/draw?players=${nextPlayers}&winners=${nextWinners}`);
+      saveDrawSession({
+        mode: labels ? 'list' : 'count',
+        players: nextPlayers,
+        winners: nextWinners,
+        labels,
+      });
+      navigate(`/draw?players=${nextPlayers}&winners=${nextWinners}`, {
+        state: {
+          mode: labels ? 'list' : 'count',
+          players: nextPlayers,
+          winners: nextWinners,
+          labels,
+        },
+      });
     },
     [navigate, persistCountsIfNeeded]
   );
 
-  const attemptStartDraw = useCallback(
-    (overridePlayers = players, overrideWinners = winners) => {
-      const nextPlayers = clampedPlayersCount(overridePlayers);
-      const nextWinners = clampedWinnersCount(overrideWinners, nextPlayers);
-      navigateToDraw(nextPlayers, nextWinners);
-    },
-    [players, winners, clampedPlayersCount, clampedWinnersCount, navigateToDraw]
-  );
+  const attemptStartDraw = () => {
+    if (setupMode === 'list') {
+      if (!optionList.isValid) return;
+      const nextPlayers = optionList.items.length;
+      const nextWinners = clampedWinnersCount(listWinners, nextPlayers);
+      startDraw(nextPlayers, nextWinners, optionList.items);
+      return;
+    }
+
+    const nextPlayers = clampedPlayersCount(players);
+    const nextWinners = clampedWinnersCount(winners, nextPlayers);
+    startDraw(nextPlayers, nextWinners, null);
+  };
 
   const handlePlayersChange = (value) => {
     const nextPlayers = clampedPlayersCount(value);
@@ -124,12 +159,19 @@ export default function HomePage() {
 
   const handleRepeatLastDraw = () => {
     if (!completedDraw) return;
-
     const nextPlayers = clampedPlayersCount(completedDraw.players);
     const nextWinners = clampedWinnersCount(completedDraw.winners, nextPlayers);
+    setSetupMode('count');
     setPlayers(nextPlayers);
     setWinners(nextWinners);
-    attemptStartDraw(nextPlayers, nextWinners);
+    startDraw(nextPlayers, nextWinners, null);
+  };
+
+  const handleSaveList = () => {
+    const saved = optionList.saveCurrent();
+    if (!saved) return;
+    setSaveFeedback(true);
+    setTimeout(() => setSaveFeedback(false), 1600);
   };
 
   const lastChoiceText = showLastChoice
@@ -138,6 +180,9 @@ export default function HomePage() {
         return `Последний выбор: ${participantsPhrase(last.players)}, ${winnersPhrase(last.winners)}`;
       })()
     : null;
+
+  const canStart =
+    setupMode === 'count' ? true : optionList.isValid && optionList.items.length <= maxParticipants;
 
   return (
     <div className="page home-page fade-in">
@@ -162,48 +207,98 @@ export default function HomePage() {
           </nav>
         </header>
 
-        {lastChoiceText && (
-          <p className="home-last-choice">{lastChoiceText}</p>
-        )}
+        <SegmentedControl
+          options={SETUP_MODES}
+          value={setupMode}
+          onChange={setSetupMode}
+          ariaLabel="Способ настройки жеребьёвки"
+        />
+
+        {lastChoiceText && <p className="home-last-choice">{lastChoiceText}</p>}
 
         <div className="spacer" />
 
-        <p className="section-label">Количество участников</p>
-        <p className="section-hint">Прокрутите колесо и выберите число</p>
-        <WheelPicker
-          min={MIN_PLAYERS}
-          max={maxParticipants}
-          value={players}
-          onChange={handlePlayersChange}
-          ariaLabel="Количество участников"
-        />
+        {setupMode === 'count' ? (
+          <>
+            <p className="section-label">Количество участников</p>
+            <p className="section-hint">Прокрутите колесо и выберите число</p>
+            <WheelPicker
+              min={MIN_PLAYERS}
+              max={maxParticipants}
+              value={players}
+              onChange={handlePlayersChange}
+              ariaLabel="Количество участников"
+            />
 
-        <p className="section-label section-label--spaced">Количество победителей</p>
-        <p className="section-hint">Сколько карточек выиграют</p>
-        <WheelPicker
-          min={1}
-          max={maxWinners}
-          value={winners}
-          onChange={handleWinnersChange}
-          ariaLabel="Количество победителей"
-        />
+            <p className="section-label section-label--spaced">Количество победителей</p>
+            <p className="section-hint">Сколько карточек выиграют</p>
+            <WheelPicker
+              min={1}
+              max={maxWinners}
+              value={winners}
+              onChange={handleWinnersChange}
+              ariaLabel="Количество победителей"
+            />
 
-        {completedDraw && (
-          <button type="button" className="home-repeat-button" onClick={handleRepeatLastDraw}>
-            Повторить прошлый жребий
-          </button>
+            {completedDraw && (
+              <button type="button" className="home-repeat-button" onClick={handleRepeatLastDraw}>
+                Повторить прошлый жребий
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            <p className="section-label">Список участников</p>
+            <p className="section-hint">Имена на карточках — по одному на строку</p>
+            <OptionListEditor
+              text={optionList.text}
+              onTextChange={optionList.setText}
+              title={optionList.title}
+              onTitleChange={optionList.setTitle}
+              items={optionList.items}
+              minItems={MIN_PLAYERS}
+              lists={optionList.lists}
+              selectedListId={optionList.selectedListId}
+              onSelectList={optionList.selectList}
+              onSaveList={handleSaveList}
+              onDeleteList={optionList.removeList}
+              placeholder={'Анна\nБорис\nВика\nГлеб'}
+            />
+            {saveFeedback && (
+              <p className="list-editor__toast" role="status">
+                Список сохранён
+              </p>
+            )}
+
+            {optionList.items.length >= MIN_PLAYERS && (
+              <>
+                <p className="section-label section-label--spaced">Количество победителей</p>
+                <WheelPicker
+                  min={1}
+                  max={listMaxWinners}
+                  value={Math.min(listWinners, listMaxWinners)}
+                  onChange={setListWinners}
+                  ariaLabel="Количество победителей"
+                />
+              </>
+            )}
+
+            {optionList.items.length > maxParticipants && (
+              <p className="form-error">
+                Слишком много имён. Максимум в настройках: {maxParticipants}.
+              </p>
+            )}
+          </>
         )}
       </div>
 
       <footer className="home-footer">
-        <PrimaryButton onClick={() => attemptStartDraw()}>
+        <PrimaryButton onClick={attemptStartDraw} disabled={!canStart}>
           Кинуть жребий
         </PrimaryButton>
       </footer>
 
-      {showOnboarding && (
-        <Onboarding onDismiss={() => setShowOnboarding(false)} />
-      )}
+      {showOnboarding && <Onboarding onDismiss={() => setShowOnboarding(false)} />}
     </div>
   );
 }

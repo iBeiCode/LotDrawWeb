@@ -101,6 +101,26 @@
   font-weight: 700;
 }
 
+.card__number--label {
+  font-size: 0.95rem;
+  line-height: 1.15;
+  padding: 0 6px;
+  text-align: center;
+  word-break: break-word;
+}
+
+.card__corner-number--label {
+  max-width: calc(100% - 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  top: 5px;
+  right: 6px;
+  left: 6px;
+  text-align: right;
+}
+
 .card__emoji,
 .draw-card-emoji.card__emoji {
   display: block;
