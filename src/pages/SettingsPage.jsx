@@ -26,7 +26,7 @@ export default function SettingsPage() {
 
   return (
     <div className="page settings-page">
-      <button type="button" className="back-button" onClick={() => navigate(-1)}>
+      <button type="button" className="back-button" onClick={() => navigate('/')}>
         ← Назад
       </button>
 
@@ -34,8 +34,8 @@ export default function SettingsPage() {
 
       <div className="settings-list">
         <SettingsToggleRow
-          title="Сохранять историю жеребьёвок"
-          subtitle="Записи появятся в разделе «История»"
+          title="Сохранять историю"
+          subtitle="Результаты появятся в разделе «История»"
           checked={isSaveResults}
           onChange={setIsSaveResults}
         />
@@ -43,7 +43,7 @@ export default function SettingsPage() {
 
         <SettingsToggleRow
           title="Запоминать участников и победителей"
-          subtitle="Восстанавливает последние значения на главном экране"
+          subtitle="Восстанавливает последние значения на экране жребия"
           checked={rememberLastValues}
           onChange={setRememberLastValues}
         />
@@ -61,7 +61,7 @@ export default function SettingsPage() {
 
         <SettingsPickerRow
           title="Максимум участников"
-          subtitle="Ограничивает выбор на главном экране"
+          subtitle="Ограничивает выбор на экране жребия"
           value={maxParticipants}
           options={MAX_PARTICIPANTS_OPTIONS}
           getLabel={(value) => String(value)}

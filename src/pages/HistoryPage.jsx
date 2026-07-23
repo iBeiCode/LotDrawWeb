@@ -1,28 +1,40 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import ScreenHeader from '../components/ScreenHeader.jsx';
 import {
   historyOutcomeForRecord,
   historySummaryForRecord,
+  historyTypeLabel,
   shareTextForRecord,
 } from '../core/formatting.js';
-import { clearAll, deleteById, groupedByDate } from '../storage/drawHistory.js';
+import { useAppSettings } from '../hooks/useAppSettings.jsx';
+import { clearAll, deleteById, groupedByDate, recordType } from '../storage/drawHistory.js';
 import { shareTextContent } from '../utils/share.js';
 
 const dateFormatter = new Intl.DateTimeFormat('ru-RU', { dateStyle: 'long' });
 const timeFormatter = new Intl.DateTimeFormat('ru-RU', { timeStyle: 'short' });
 
-function HistoryRecordRow({ record, onDelete, onShareCopied }) {
-  const handleShare = () => {
-    shareTextContent(shareTextForRecord(record), onShareCopied);
+function HistoryRecordRow({ record, onDelete, onShareFeedback }) {
+  const handleShare = async () => {
+    const result = await shareTextContent(shareTextForRecord(record));
+    if (result === 'shared' || result === 'copied') {
+      onShareFeedback(result === 'copied' ? 'Скопировано' : 'Отправлено');
+    } else if (result === 'failed') {
+      onShareFeedback('Не удалось скопировать');
+    }
   };
 
   return (
     <article className="history-record">
       <div className="history-record__content">
-        <h3 className="history-record__time">
-          {timeFormatter.format(new Date(record.date))}
-        </h3>
+        <div className="history-record__meta">
+          <h3 className="history-record__time">
+            {timeFormatter.format(new Date(record.date))}
+          </h3>
+          <span className={`history-type history-type--${recordType(record)}`}>
+            {historyTypeLabel(record)}
+          </span>
+        </div>
         <p className="history-record__summary">
           {historySummaryForRecord(record)}
         </p>
@@ -94,10 +106,11 @@ function ClearHistoryDialog({ onConfirm, onCancel }) {
 
 export default function HistoryPage() {
   const navigate = useNavigate();
+  const { isSaveResults } = useAppSettings();
   const [groups, setGroups] = useState(() => groupedByDate());
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [shareToast, setShareToast] = useState('');
 
   const reload = useCallback(() => {
     setGroups(groupedByDate());
@@ -124,9 +137,9 @@ export default function HistoryPage() {
     reload();
   };
 
-  const handleShareCopied = () => {
-    setShareCopied(true);
-    setTimeout(() => setShareCopied(false), 2000);
+  const handleShareFeedback = (message) => {
+    setShareToast(message);
+    setTimeout(() => setShareToast(''), 2000);
   };
 
   const isEmpty = groups.length === 0;
@@ -134,7 +147,7 @@ export default function HistoryPage() {
   return (
     <div className="page history-page">
       <div className="history-page__top">
-        <button type="button" className="back-button" onClick={() => navigate(-1)}>
+        <button type="button" className="back-button" onClick={() => navigate('/')}>
           ← Назад
         </button>
         {!isEmpty && (
@@ -150,18 +163,35 @@ export default function HistoryPage() {
 
       <ScreenHeader title="История" />
 
-      {shareCopied && (
+      {shareToast && (
         <p className="history-page__toast" role="status">
-          Скопировано
+          {shareToast}
         </p>
       )}
 
       {isEmpty ? (
         <div className="history-empty">
-          <p className="history-empty__title">Пока нет сохранённых результатов</p>
-          <p className="history-empty__hint">
-            Включите «Сохранять историю жеребьёвок» в настройках
-          </p>
+          {isSaveResults ? (
+            <>
+              <p className="history-empty__title">Пока нет результатов</p>
+              <p className="history-empty__hint">
+                Сыграйте в любом режиме — результат появится здесь
+              </p>
+              <Link to="/" className="history-empty__link">
+                К режимам
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="history-empty__title">История выключена</p>
+              <p className="history-empty__hint">
+                Включите «Сохранять историю» в настройках
+              </p>
+              <Link to="/settings" className="history-empty__link">
+                Открыть настройки
+              </Link>
+            </>
+          )}
         </div>
       ) : (
         <div className="history-list">
@@ -175,7 +205,7 @@ export default function HistoryPage() {
                   key={record.id}
                   record={record}
                   onDelete={handleDelete}
-                  onShareCopied={handleShareCopied}
+                  onShareFeedback={handleShareFeedback}
                 />
               ))}
             </section>

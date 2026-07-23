@@ -17,7 +17,7 @@ export default function DrawComplete({
   onRestart,
   onGoHome,
 }) {
-  const [copiedFeedback, setCopiedFeedback] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
   const hasLabels = Array.isArray(winnerLabels) && winnerLabels.length > 0;
 
   const shareContent = useMemo(
@@ -30,11 +30,16 @@ export default function DrawComplete({
     ? winnerOutcomeTextFromLabels(winnerLabels)
     : winnerOutcomeText(winnerIndices);
 
-  const handleShare = () => {
-    shareTextContent(shareContent, () => {
-      setCopiedFeedback(true);
-      setTimeout(() => setCopiedFeedback(false), 2000);
-    });
+  const handleShare = async () => {
+    const result = await shareTextContent(shareContent);
+    if (result === 'shared' || result === 'copied') {
+      setShareFeedback(result === 'copied' ? 'Скопировано' : 'Отправлено');
+    } else if (result === 'failed') {
+      setShareFeedback('Не удалось скопировать');
+    } else {
+      return;
+    }
+    setTimeout(() => setShareFeedback(''), 2000);
   };
 
   return (
@@ -49,13 +54,13 @@ export default function DrawComplete({
         </p>
         <p className="dialog__outcome">{outcome}</p>
         <PrimaryButton className="dialog__share" onClick={handleShare}>
-          {copiedFeedback ? 'Скопировано' : 'Поделиться результатом'}
+          {shareFeedback || 'Поделиться результатом'}
         </PrimaryButton>
         <button type="button" className="dialog__link" onClick={onGoHome}>
-          К настройке жеребьёвки
+          К настройке жребия
         </button>
         <button type="button" className="dialog__secondary" onClick={onRestart}>
-          Новый жребий
+          Ещё раз
         </button>
       </div>
     </div>

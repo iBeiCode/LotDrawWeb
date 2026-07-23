@@ -172,6 +172,14 @@ export function shareTextForRecord(record) {
   return lines.join('\n');
 }
 
+export function historyTypeLabel(record) {
+  const type = recordType(record);
+  if (type === 'coin') return 'Монетка';
+  if (type === 'wheel') return 'Колесо';
+  if (type === 'dice') return 'Кубики';
+  return 'Жребий';
+}
+
 export function historySummaryForRecord(record) {
   const type = recordType(record);
   if (type === 'coin') return coinSummary();

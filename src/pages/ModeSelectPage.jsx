@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ArchiveBoxIcon, GearIcon } from '../components/icons/ToolbarIcons.jsx';
+import ModeToolbar from '../components/ModeToolbar.jsx';
 
 function CardsModeIcon() {
   return (
@@ -74,7 +74,7 @@ const MODES = [
   {
     to: '/dice',
     title: 'Кубики',
-    subtitle: 'Бросок 1–6',
+    subtitle: '1–6 кубиков',
     Icon: DiceModeIcon,
     tone: 'dice',
   },
@@ -89,14 +89,7 @@ export default function ModeSelectPage() {
           <p className="mode-select-brand__name">LotDraw</p>
           <h1 className="mode-select-brand__title">Что бросаем?</h1>
         </div>
-        <nav className="home-toolbar" aria-label="Дополнительные разделы">
-          <Link to="/settings" className="home-toolbar__button" aria-label="Настройки">
-            <GearIcon />
-          </Link>
-          <Link to="/history" className="home-toolbar__button" aria-label="История">
-            <ArchiveBoxIcon />
-          </Link>
-        </nav>
+        <ModeToolbar />
       </header>
 
       <div className="mode-select-tiles mode-select-tiles--grid">

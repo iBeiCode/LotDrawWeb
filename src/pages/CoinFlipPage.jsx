@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ModeToolbar from '../components/ModeToolbar.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
 import { COIN_SIDES } from '../core/coinFlip.js';
 import { coinShareText } from '../core/formatting.js';
@@ -48,19 +49,25 @@ export default function CoinFlipPage() {
     showResult,
     flip,
   } = useCoinFlip();
-  const [copiedFeedback, setCopiedFeedback] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
 
   const shareContent = useMemo(
     () => (side ? coinShareText(side) : ''),
     [side]
   );
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!shareContent) return;
-    shareTextContent(shareContent, () => {
-      setCopiedFeedback(true);
-      setTimeout(() => setCopiedFeedback(false), 2000);
-    });
+    const result = await shareTextContent(shareContent);
+    if (result === 'shared' || result === 'copied') {
+      setShareFeedback(result === 'copied' ? 'Скопировано' : 'Отправлено');
+    } else if (result === 'failed') {
+      setShareFeedback('Не удалось скопировать');
+    } else {
+      setShareFeedback('');
+      return;
+    }
+    setTimeout(() => setShareFeedback(''), 2000);
   };
 
   const statusText = (() => {
@@ -71,13 +78,15 @@ export default function CoinFlipPage() {
 
   return (
     <div className="page coin-page fade-in">
-      <button type="button" className="back-button" onClick={() => navigate('/')}>
-        ← Назад
-      </button>
-
-      <header className="coin-header">
-        <h1 className="coin-header__title">Монетка</h1>
-        <p className="coin-header__hint">Орёл или решка — один бросок</p>
+      <header className="mode-page-header">
+        <button type="button" className="home-header__back" onClick={() => navigate('/')} aria-label="К выбору режима">
+          ←
+        </button>
+        <div className="coin-header mode-page-header__center">
+          <h1 className="coin-header__title">Монетка</h1>
+          <p className="coin-header__hint">Орёл или решка — один бросок</p>
+        </div>
+        <ModeToolbar />
       </header>
 
       <div className="coin-page__body">
@@ -105,7 +114,7 @@ export default function CoinFlipPage() {
         </PrimaryButton>
         {showResult && (
           <button type="button" className="dialog__link" onClick={handleShare}>
-            {copiedFeedback ? 'Скопировано' : 'Поделиться результатом'}
+            {shareFeedback || 'Поделиться результатом'}
           </button>
         )}
       </footer>

@@ -30,7 +30,12 @@ body {
   width: 100%;
   max-width: 480px;
   min-height: 100%;
-  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  min-height: 100dvh;
+  padding:
+    max(16px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
 }
@@ -468,14 +473,57 @@ body {
 
 .back-button {
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
   margin-bottom: 8px;
-  padding: 8px 0;
+  padding: 8px 4px;
   border: none;
+  border-radius: 10px;
   background: none;
   color: var(--button-primary);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.back-button:hover {
+  background: var(--button-secondary);
+}
+
+.mode-page-header {
+  display: grid;
+  grid-template-columns: 44px 1fr 88px;
+  align-items: start;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mode-page-header__center {
+  text-align: center;
+}
+
+.mode-page-header .coin-header {
+  margin: 0;
+}
+
+.footer-hint {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--secondary-text);
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--button-primary);
+  outline-offset: 2px;
 }
 
 .settings-page {
@@ -654,6 +702,18 @@ body {
   color: var(--secondary-text);
 }
 
+.history-empty__link {
+  display: inline-flex;
+  margin-top: 4px;
+  color: var(--button-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.history-empty__link:hover {
+  text-decoration: underline;
+}
+
 .history-list {
   flex: 1;
   overflow-y: auto;
@@ -686,10 +746,49 @@ body {
   min-width: 0;
 }
 
+.history-record__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
 .history-record__time {
-  margin: 0 0 6px;
+  margin: 0;
   font-size: 1rem;
   font-weight: 600;
+}
+
+.history-type {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: var(--button-secondary);
+  color: var(--secondary-text);
+}
+
+.history-type--draw {
+  background: color-mix(in srgb, var(--button-primary) 16%, transparent);
+  color: var(--button-primary);
+}
+
+.history-type--coin {
+  background: color-mix(in srgb, #c9a227 20%, transparent);
+  color: #9a7b1a;
+}
+
+.history-type--wheel {
+  background: color-mix(in srgb, var(--brand-secondary) 18%, transparent);
+  color: var(--brand-secondary);
+}
+
+.history-type--dice {
+  background: color-mix(in srgb, var(--error) 14%, transparent);
+  color: var(--error);
 }
 
 .history-record__summary {
@@ -1541,17 +1640,28 @@ body {
 
 .list-editor__chip-delete {
   position: absolute;
-  top: -6px;
-  right: -6px;
-  width: 20px;
-  height: 20px;
+  top: -8px;
+  right: -8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
   border: none;
   border-radius: 50%;
   background: var(--error);
   color: white;
-  font-size: 0.75rem;
+  font-size: 1.125rem;
   line-height: 1;
   cursor: pointer;
+}
+
+.list-editor__note {
+  margin: -4px 0 0;
+  font-size: 0.75rem;
+  color: var(--secondary-text);
 }
 
 .list-editor__preview {

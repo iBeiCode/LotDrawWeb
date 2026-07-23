@@ -3,7 +3,7 @@ import { displayNumber } from '../core/drawEngine.js';
 import { pseudoShuffleNumber } from '../hooks/useShuffleDisplayNumbers.js';
 import DrawCardEmojiImage from './DrawCardEmojiImage.jsx';
 
-function truncateLabel(label, max = 10) {
+function truncateLabel(label, max = 14) {
   if (!label) return '';
   if (label.length <= max) return label;
   return `${label.slice(0, max - 1)}…`;
@@ -28,11 +28,11 @@ export default function Card({
   const frontText = hasLabel
     ? isShuffling
       ? '···'
-      : truncateLabel(player.label, 9)
+      : truncateLabel(player.label, 16)
     : String(number);
 
   const cornerText = hasLabel
-    ? truncateLabel(player.label, 8)
+    ? truncateLabel(player.label, 12)
     : String(displayNumber(player.index));
 
   const isFlipped = player.isFlipped;

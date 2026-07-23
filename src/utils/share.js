@@ -1,23 +1,29 @@
 import { shareViaTelegram } from './telegram.js';
 
+/**
+ * @returns {'shared' | 'copied' | 'aborted' | 'failed'}
+ */
 export async function shareTextContent(text, onCopied) {
   if (shareViaTelegram(text)) {
-    return;
+    onCopied?.();
+    return 'shared';
   }
 
   if (navigator.share) {
     try {
       await navigator.share({ text });
-      return;
+      onCopied?.();
+      return 'shared';
     } catch (error) {
-      if (error.name === 'AbortError') return;
+      if (error.name === 'AbortError') return 'aborted';
     }
   }
 
   try {
     await navigator.clipboard.writeText(text);
     onCopied?.();
+    return 'copied';
   } catch {
-    // clipboard unavailable
+    return 'failed';
   }
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ModeToolbar from '../components/ModeToolbar.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
 import { diceOutcomeText, diceShareText } from '../core/formatting.js';
 import { MAX_DICE, MIN_DICE } from '../core/diceEngine.js';
@@ -35,7 +36,7 @@ function DieFace({ value, rolling }) {
 export default function DicePage() {
   const navigate = useNavigate();
   const [count, setCount] = useState(2);
-  const [copiedFeedback, setCopiedFeedback] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
   const { phase, displayValues, isRolling, showResult, roll } = useDice(count);
 
   const shareContent = useMemo(
@@ -43,23 +44,30 @@ export default function DicePage() {
     [showResult, displayValues]
   );
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!shareContent) return;
-    shareTextContent(shareContent, () => {
-      setCopiedFeedback(true);
-      setTimeout(() => setCopiedFeedback(false), 2000);
-    });
+    const result = await shareTextContent(shareContent);
+    if (result === 'shared' || result === 'copied') {
+      setShareFeedback(result === 'copied' ? 'Скопировано' : 'Отправлено');
+    } else if (result === 'failed') {
+      setShareFeedback('Не удалось скопировать');
+    } else {
+      return;
+    }
+    setTimeout(() => setShareFeedback(''), 2000);
   };
 
   return (
     <div className="page dice-page fade-in">
-      <button type="button" className="back-button" onClick={() => navigate('/')}>
-        ← Назад
-      </button>
-
-      <header className="coin-header">
-        <h1 className="coin-header__title">Кубики</h1>
-        <p className="coin-header__hint">Классический бросок 1–6 граней</p>
+      <header className="mode-page-header">
+        <button type="button" className="home-header__back" onClick={() => navigate('/')} aria-label="К выбору режима">
+          ←
+        </button>
+        <div className="coin-header mode-page-header__center">
+          <h1 className="coin-header__title">Кубики</h1>
+          <p className="coin-header__hint">1–6 кубиков</p>
+        </div>
+        <ModeToolbar />
       </header>
 
       <div className="dice-page__body">
@@ -100,7 +108,7 @@ export default function DicePage() {
         </PrimaryButton>
         {showResult && (
           <button type="button" className="dialog__link" onClick={handleShare}>
-            {copiedFeedback ? 'Скопировано' : 'Поделиться результатом'}
+            {shareFeedback || 'Поделиться результатом'}
           </button>
         )}
       </footer>

@@ -1,3 +1,28 @@
+import { useState } from 'react';
+
+function DeleteListDialog({ title, onConfirm, onCancel }) {
+  return (
+    <div className="alert-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="delete-list-title">
+      <div className="alert">
+        <h2 id="delete-list-title" className="alert__title">
+          Удалить список?
+        </h2>
+        <p className="alert__message">
+          Список «{title}» будет удалён без возможности восстановления.
+        </p>
+        <div className="alert__actions">
+          <button type="button" className="alert__button alert__button--secondary" onClick={onCancel}>
+            Отмена
+          </button>
+          <button type="button" className="alert__button alert__button--primary" onClick={onConfirm}>
+            Удалить
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function OptionListEditor({
   text,
   onTextChange,
@@ -13,12 +38,20 @@ export default function OptionListEditor({
   placeholder = 'По одному варианту на строку…',
   showSave = true,
 }) {
+  const [pendingDelete, setPendingDelete] = useState(null);
+
   const countLabel =
     items.length === 0
       ? 'Пока пусто'
       : items.length < minItems
         ? `Ещё нужно минимум ${minItems - items.length}`
         : `${items.length} в списке`;
+
+  const handleConfirmDelete = () => {
+    if (!pendingDelete) return;
+    onDeleteList?.(pendingDelete.id);
+    setPendingDelete(null);
+  };
 
   return (
     <div className="list-editor">
@@ -41,7 +74,7 @@ export default function OptionListEditor({
                     type="button"
                     className="list-editor__chip-delete"
                     aria-label={`Удалить список ${list.title}`}
-                    onClick={() => onDeleteList(list.id)}
+                    onClick={() => setPendingDelete({ id: list.id, title: list.title })}
                   >
                     ×
                   </button>
@@ -96,6 +129,8 @@ export default function OptionListEditor({
         )}
       </div>
 
+      <p className="list-editor__note">Повторы строк не учитываются.</p>
+
       {items.length > 0 && (
         <div className="list-editor__preview" aria-label="Превью списка">
           {items.slice(0, 12).map((item) => (
@@ -107,6 +142,14 @@ export default function OptionListEditor({
             <span className="list-editor__preview-more">+{items.length - 12}</span>
           )}
         </div>
+      )}
+
+      {pendingDelete && (
+        <DeleteListDialog
+          title={pendingDelete.title}
+          onConfirm={handleConfirmDelete}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

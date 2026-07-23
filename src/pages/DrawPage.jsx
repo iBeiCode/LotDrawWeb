@@ -144,19 +144,20 @@ export default function DrawPage() {
         <p className="draw-header__progress">
           {isShuffling ? 'Жеребьёвка' : `Открыто ${flippedCount} из ${totalPlayers}`}
         </p>
-        <div
-          className="progress-bar"
-          role="progressbar"
-          aria-valuenow={flippedCount}
-          aria-valuemin={0}
-          aria-valuemax={totalPlayers}
-          aria-hidden={isShuffling || undefined}
-        >
+        {!isShuffling && (
           <div
-            className="progress-bar__fill"
-            style={{ width: `${drawProgress * 100}%` }}
-          />
-        </div>
+            className="progress-bar"
+            role="progressbar"
+            aria-valuenow={flippedCount}
+            aria-valuemin={0}
+            aria-valuemax={totalPlayers}
+          >
+            <div
+              className="progress-bar__fill"
+              style={{ width: `${drawProgress * 100}%` }}
+            />
+          </div>
+        )}
         {showHint && (
           <p className="draw-hint">Нажмите на карточку, чтобы открыть</p>
         )}

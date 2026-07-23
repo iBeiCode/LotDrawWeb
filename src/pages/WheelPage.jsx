@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import ModeToolbar from '../components/ModeToolbar.jsx';
 import OptionListEditor from '../components/OptionListEditor.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
 import { wheelShareText } from '../core/formatting.js';
@@ -66,7 +67,7 @@ function WheelVisual({ options, colors, rotation, isAnimating, disabled }) {
 export default function WheelPage() {
   const navigate = useNavigate();
   const [saveFeedback, setSaveFeedback] = useState(false);
-  const [copiedFeedback, setCopiedFeedback] = useState(false);
+  const [shareFeedback, setShareFeedback] = useState('');
   const optionList = useOptionList({ minItems: MIN_WHEEL_OPTIONS, scope: 'wheel' });
 
   const options = useMemo(
@@ -86,6 +87,7 @@ export default function WheelPage() {
   } = useWheel(options);
 
   const canSpin = options.length >= MIN_WHEEL_OPTIONS && !isSpinning;
+  const needsSetup = options.length < MIN_WHEEL_OPTIONS;
 
   const shareContent = useMemo(
     () => (resultLabel ? wheelShareText(resultLabel, options.length) : ''),
@@ -99,23 +101,37 @@ export default function WheelPage() {
     setTimeout(() => setSaveFeedback(false), 1600);
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (!shareContent) return;
-    shareTextContent(shareContent, () => {
-      setCopiedFeedback(true);
-      setTimeout(() => setCopiedFeedback(false), 2000);
-    });
+    const result = await shareTextContent(shareContent);
+    if (result === 'shared' || result === 'copied') {
+      setShareFeedback(result === 'copied' ? 'Скопировано' : 'Отправлено');
+    } else if (result === 'failed') {
+      setShareFeedback('Не удалось скопировать');
+    } else {
+      return;
+    }
+    setTimeout(() => setShareFeedback(''), 2000);
   };
+
+  const statusText = (() => {
+    if (isSpinning) return 'Крутится…';
+    if (showResult) return resultLabel;
+    if (needsSetup) return 'Добавьте минимум 2 варианта';
+    return 'Готово к запуску';
+  })();
 
   return (
     <div className="page wheel-page fade-in">
-      <button type="button" className="back-button" onClick={() => navigate('/')}>
-        ← Назад
-      </button>
-
-      <header className="coin-header">
-        <h1 className="coin-header__title">Колесо</h1>
-        <p className="coin-header__hint">Крутите — и пусть выберет судьба</p>
+      <header className="mode-page-header">
+        <button type="button" className="home-header__back" onClick={() => navigate('/')} aria-label="К выбору режима">
+          ←
+        </button>
+        <div className="coin-header mode-page-header__center">
+          <h1 className="coin-header__title">Колесо</h1>
+          <p className="coin-header__hint">Крутите — и пусть выберет судьба</p>
+        </div>
+        <ModeToolbar />
       </header>
 
       <div className="wheel-page__body">
@@ -145,10 +161,10 @@ export default function WheelPage() {
           className={`coin-status${showResult ? ' coin-status--result' : ''}${isSpinning ? ' coin-status--busy' : ''}`}
           aria-live="polite"
         >
-          {isSpinning ? 'Крутится…' : showResult ? resultLabel : 'Готово к запуску'}
+          {statusText}
         </p>
 
-        <details className="wheel-setup">
+        <details className="wheel-setup" open={needsSetup || undefined}>
           <summary className="wheel-setup__summary">Список вариантов</summary>
           <OptionListEditor
             text={optionList.text}
@@ -181,9 +197,14 @@ export default function WheelPage() {
         <PrimaryButton onClick={spin} disabled={!canSpin}>
           {phase === 'idle' ? 'Крутить' : 'Ещё раз'}
         </PrimaryButton>
+        {needsSetup && (
+          <p className="footer-hint" role="status">
+            Добавьте минимум 2 варианта
+          </p>
+        )}
         {showResult && (
           <button type="button" className="dialog__link" onClick={handleShare}>
-            {copiedFeedback ? 'Скопировано' : 'Поделиться результатом'}
+            {shareFeedback || 'Поделиться результатом'}
           </button>
         )}
       </footer>

@@ -102,11 +102,16 @@
 }
 
 .card__number--label {
-  font-size: 0.95rem;
-  line-height: 1.15;
-  padding: 0 6px;
+  font-size: 0.9rem;
+  line-height: 1.2;
+  padding: 0 8px;
   text-align: center;
   word-break: break-word;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .card__corner-number--label {

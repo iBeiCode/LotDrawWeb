@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import {
   DEFAULT_PLAYERS,
   DEFAULT_WINNERS,
@@ -9,8 +9,8 @@ import { participantsPhrase, winnersPhrase } from '../core/formatting.js';
 import OptionListEditor from '../components/OptionListEditor.jsx';
 import PrimaryButton from '../components/PrimaryButton.jsx';
 import SegmentedControl from '../components/SegmentedControl.jsx';
+import ModeToolbar from '../components/ModeToolbar.jsx';
 import WheelPicker from '../components/WheelPicker.jsx';
-import { ArchiveBoxIcon, GearIcon } from '../components/icons/ToolbarIcons.jsx';
 import Onboarding from '../components/Onboarding.jsx';
 import { useAppSettings } from '../hooks/useAppSettings.jsx';
 import { useOptionList } from '../hooks/useOptionList.js';
@@ -196,15 +196,8 @@ export default function HomePage() {
           >
             ←
           </button>
-          <h1 className="page-title home-header__title">Жеребьёвка</h1>
-          <nav className="home-toolbar" aria-label="Дополнительные разделы">
-            <Link to="/settings" className="home-toolbar__button" aria-label="Настройки">
-              <GearIcon />
-            </Link>
-            <Link to="/history" className="home-toolbar__button" aria-label="История">
-              <ArchiveBoxIcon />
-            </Link>
-          </nav>
+          <h1 className="page-title home-header__title">Жребий</h1>
+          <ModeToolbar />
         </header>
 
         <SegmentedControl
@@ -240,7 +233,7 @@ export default function HomePage() {
               ariaLabel="Количество победителей"
             />
 
-            {completedDraw && (
+            {completedDraw && setupMode === 'count' && (
               <button type="button" className="home-repeat-button" onClick={handleRepeatLastDraw}>
                 Повторить прошлый жребий
               </button>
@@ -273,6 +266,7 @@ export default function HomePage() {
             {optionList.items.length >= MIN_PLAYERS && (
               <>
                 <p className="section-label section-label--spaced">Количество победителей</p>
+                <p className="section-hint">Сколько имён выиграют</p>
                 <WheelPicker
                   min={1}
                   max={listMaxWinners}
@@ -296,6 +290,13 @@ export default function HomePage() {
         <PrimaryButton onClick={attemptStartDraw} disabled={!canStart}>
           Кинуть жребий
         </PrimaryButton>
+        {!canStart && setupMode === 'list' && (
+          <p className="footer-hint" role="status">
+            {optionList.items.length > maxParticipants
+              ? `Слишком много имён. Максимум: ${maxParticipants}`
+              : 'Добавьте минимум 2 имени'}
+          </p>
+        )}
       </footer>
 
       {showOnboarding && <Onboarding onDismiss={() => setShowOnboarding(false)} />}
